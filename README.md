@@ -15,7 +15,7 @@ This fork builds on the excellent original script by adding several features:
   - Paste the following and press enter:
       
     ```powershell
-     iex (Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/ymuuuu/Forked-Apple-Mobile-Drivers-Installer/refs/heads/main/AppleDrivInstaller.ps1')
+     iex (Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/ymuuuu/Forked-Apple-Mobile-Drivers-Installer/main/AppleDrivInstaller.ps1')
     ```
   - A good minute and we're done, drivers installed\!
 
