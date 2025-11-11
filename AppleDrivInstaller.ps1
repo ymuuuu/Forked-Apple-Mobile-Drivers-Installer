@@ -64,4 +64,5 @@ try {
 
 Write-Host ""
 Write-Host -ForegroundColor Cyan "Installation complete! Enjoy your Apple devices!!"
+
 Write-Host -ForegroundColor Yellow "(If devices are still not working, a reboot might be needed!!)"
