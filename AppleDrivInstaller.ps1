@@ -1,6 +1,9 @@
 ## Apple USB and Mobile Device Ethernet drivers installer!
 ## Please report any issues at GitHub: https://github.com/NelloKudo/Apple-Mobile-Drivers-Installer
 
+# --- MODIFICATION: Import BitsTransfer for progress bars ---
+Import-Module BitsTransfer -ErrorAction SilentlyContinue
+
 ## Download links for Apple USB Drivers and Apple Mobile Ethernet USB Drivers respectively.
 ## All of these are downloaded from Microsoft's Update Catalog, which you can browse yourself at here: https://www.catalog.update.microsoft.com/
 
@@ -26,23 +29,62 @@ if (-not (Test-Path $destinationFolder)) {
     New-Item -ItemType Directory -Path $destinationFolder | Out-Null
 }
 
+# --- MODIFICATION: Print download path for tracing ---
+Write-Host "Temporary file location: $destinationFolder" -ForegroundColor Gray
+
 try {
     $currentPath = $PWD.Path
-    Write-Host -ForegroundColor Yellow "Downloading Apple iTunes and installing AppleMobileDeviceSupport64.msi.."
-    Write-Host -ForegroundColor Yellow "(It might take a while! Script is not frozen!)"
-    (New-Object System.Net.WebClient).DownloadFile($AppleITunesLink, [System.IO.Path]::Combine($destinationFolder, "iTunes64Setup.exe"))
-    cd "$destinationFolder"
-    Start-Process -FilePath "$destinationFolder\iTunes64Setup.exe" -ArgumentList "/extract" -Wait
-    cd "$currentPath"
-    Start-Process -FilePath "$destinationFolder\AppleMobileDeviceSupport64.msi" -ArgumentList "/qn" -Wait
+    
+    # --- MODIFICATION START: Smarter download logic for iTunes ---
+    $iTunesInstallerPath = [System.IO.Path]::Combine($destinationFolder, "iTunes64Setup.exe")
+    $amdsMsiPath = [System.IO.Path]::Combine($destinationFolder, "AppleMobileDeviceSupport64.msi")
 
-    Write-Host -ForegroundColor Yellow "Downloading Apple USB and Mobile Device Ethernet drivers from Microsoft..."
-    Invoke-WebRequest -Uri $AppleDri1 -OutFile ([System.IO.Path]::Combine($destinationFolder, "AppleUSB-486.0.0.0-driv.cab"))
-    Invoke-WebRequest -Uri $AppleDri2 -OutFile ([System.IO.Path]::Combine($destinationFolder, "AppleNet-1.8.5.1-driv.cab"))
+    If (Test-Path $amdsMsiPath) {
+        Write-Host "AppleMobileDeviceSupport64.msi already found. Skipping download and extraction." -ForegroundColor Green
+    } Else {
+        If (Test-Path $iTunesInstallerPath) {
+            Write-Host "iTunes64Setup.exe found. Skipping download." -ForegroundColor Green
+        } Else {
+            Write-Host -ForegroundColor Yellow "Downloading Apple iTunes installer..."
+            # --- MODIFICATION: Use Start-BitsTransfer for progress bar ---
+            Start-BitsTransfer -Source $AppleITunesLink -Destination $iTunesInstallerPath -DisplayName "Downloading iTunes Installer"
+        }
+        
+        Write-Host -ForegroundColor Yellow "Extracting AppleMobileDeviceSupport64.msi..."
+        cd "$destinationFolder"
+        Start-Process -FilePath $iTunesInstallerPath -ArgumentList "/extract" -Wait
+        cd "$currentPath"
+    }
+    # --- MODIFICATION END ---
+
+    Write-Host -ForegroundColor Yellow "Installing AppleMobileDeviceSupport64.msi..."
+    Start-Process -FilePath $amdsMsiPath -ArgumentList "/qn" -Wait
+
+    # --- MODIFICATION START: Define paths and check before downloading CAB files ---
+    Write-Host -ForegroundColor Yellow "Checking for Apple USB and Mobile Device Ethernet drivers..."
+    $usbDriPath = [System.IO.Path]::Combine($destinationFolder, "AppleUSB-486.0.0.0-driv.cab")
+    $netDriPath = [System.IO.Path]::Combine($destinationFolder, "AppleNet-1.8.5.1-driv.cab")
+
+    If (Test-Path $usbDriPath) {
+        Write-Host "AppleUSB driver (AppleUSB-486.0.0.0-driv.cab) found. Skipping download." -ForegroundColor Green
+    } Else {
+        Write-Host "Downloading AppleUSB driver..."
+        # --- MODIFICATION: Use Start-BitsTransfer for progress bar ---
+        Start-BitsTransfer -Source $AppleDri1 -Destination $usbDriPath -DisplayName "Downloading AppleUSB Driver"
+    }
+    
+    If (Test-Path $netDriPath) {
+        Write-Host "AppleNet driver (AppleNet-1.8.5.1-driv.cab) found. Skipping download." -ForegroundColor Green
+    } Else {
+        Write-Host "Downloading AppleNet driver..."
+        # --- MODIFICATION: Use Start-BitsTransfer for progress bar ---
+        Start-BitsTransfer -Source $AppleDri2 -Destination $netDriPath -DisplayName "Downloading AppleNet Driver"
+    }
+    # --- MODIFICATION END ---
 
     Write-Host -ForegroundColor Yellow "Extracting drivers..."
-    & expand.exe -F:* "$destinationFolder\AppleUSB-486.0.0.0-driv.cab" "$destinationFolder" >$null 2>&1
-    & expand.exe -F:* "$destinationFolder\AppleNet-1.8.5.1-driv.cab" "$destinationFolder" >$null 2>&1
+    & expand.exe -F:* $usbDriPath "$destinationFolder" >$null 2>&1
+    & expand.exe -F:* $netDriPath "$destinationFolder" >$null 2>&1
 
     ## Installing drivers..
     Write-Host -ForegroundColor Yellow "Installing Apple USB and Mobile Device Ethernet drivers!"
@@ -65,4 +107,18 @@ try {
 Write-Host ""
 Write-Host -ForegroundColor Cyan "Installation complete! Enjoy your Apple devices!!"
 
-Write-Host -ForegroundColor Yellow "(If devices are still not working, a reboot might be needed!!)"
+# --- MODIFICATION START: Add restart prompt ---
+Write-Host -ForegroundColor Yellow "A restart is recommended to ensure all drivers are loaded correctly."
+try {
+    $choice = Read-Host "Do you want to restart now? (Y/N)"
+
+    If ($choice -match '^[Yy]$') {
+        Write-Host "Restarting computer..."
+        Restart-Computer -Force
+    } Else {
+        Write-Host "Restart skipped. Please restart your computer manually later."
+    }
+} catch {
+    Write-Host -ForegroundColor Red "Failed to read input. Please restart manually."
+}
+# --- MODIFICATION END ---
