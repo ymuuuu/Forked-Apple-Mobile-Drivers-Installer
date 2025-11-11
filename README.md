@@ -1,7 +1,7 @@
 -----
 ## Features of This Fork
 
-This fork builds on the excellent original script by adding several quality-of-life features:
+This fork builds on the excellent original script by adding several features:
 
   * **Smarter Downloads:** The script checks if the required driver files (`.cab`, `.msi`) already exist in the temporary folder. If they do, it skips the download, saving you time and bandwidth.
   * **Download Progress Bars:** See the status of your downloads in real-time. No more guessing if the script is frozen\!
